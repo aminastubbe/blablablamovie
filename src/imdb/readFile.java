@@ -291,8 +291,7 @@ if (filename.equals("actresses.list")) {
                                     Boolean credits = false;
                                     String moviedata = line.trim();
                                     String pattern = "\\(\\d{4}\\)|\\(\\d{4}\\/.*\\)";
-                                    Pattern pyear = Pattern.compile(pattern);
-                                    Matcher myear = pyear.matcher(moviedata);
+                                    Matcher myear = getMatcher(pattern, moviedata);
                                     if (myear.find()) {
                                         year = (myear.group(0)).substring(1, 5);
                                     }
