@@ -52,11 +52,29 @@ public class readFile {
         if (filename.equals("movies.list")) {
             fw = new FileWriter("movies.csv");
         }
-        if(filename.equals("actresses.list")){
+        if (filename.equals("actresses.list")) {
             fw = new FileWriter("actresses.csv");
         }
+        if (filename.equals("running-times.list")){
+            fw = new FileWriter("running-times.csv");
+        }
+       
         while (dis.ready()) {
-if (filename.equals("actresses.list")) {
+            if (filename.equals("running-times.list")){
+                /*start*/
+                /*
+               
+                RUNNING TIMES LIST
+                ==================
+                "#1 Single" (2006)					30
+                "#1 Single" (2006) {Cats and Dogs (#1.4)}		20
+                "#1 Single" (2006) {Finishing a Chapter (#1.5)}		20
+
+                */
+
+            }
+            if(filename.equals("release-dates.list")){}
+            if (filename.equals("actresses.list")) {
 
                 String originalLine = "THE ACTRESSES LIST";
                 String line = dis.readLine();
@@ -245,7 +263,7 @@ if (filename.equals("actresses.list")) {
                             }
                             moviedata = moviedata.replaceFirst(pattern, "").trim();
                             pattern = "\\(as .*\\)";
-                            Matcher malternatename=getMatcher(pattern, moviedata);
+                            Matcher malternatename = getMatcher(pattern, moviedata);
                             if (malternatename.find()) {
 
                                 alternatename = (malternatename.group(0)).substring(4, malternatename.group(0).length() - 1);
@@ -305,7 +323,7 @@ if (filename.equals("actresses.list")) {
                                     }
                                     moviedata = moviedata.replaceFirst(pattern, "").trim();
                                     pattern = "\\(as .*\\)";
-                                    Matcher malternatename= getMatcher(pattern,moviedata);
+                                    Matcher malternatename = getMatcher(pattern, moviedata);
                                     if (malternatename.find()) {
 
                                         alternatename = (malternatename.group(0)).substring(4, malternatename.group(0).length() - 1);
@@ -387,26 +405,29 @@ if (filename.equals("actresses.list")) {
         }
         closeConnections(fw, fis, bis, dis);
     }
-    private void closeConnections(FileWriter fw, FileInputStream fis, BufferedInputStream bis,BufferedReader dis ) throws IOException{      
+
+    private void closeConnections(FileWriter fw, FileInputStream fis, BufferedInputStream bis, BufferedReader dis) throws IOException {
         fw.flush();
         fw.close();
         fis.close();
         bis.close();
         dis.close();
     }
-    private String getYearPattern(){
+
+    private String getYearPattern() {
         return "\\(\\d{4}\\)|\\(\\d{4}\\/.*\\)";
     }
-    private String getEpisodePattern(){
-        return  "\\{.*\\}";
+
+    private String getEpisodePattern() {
+        return "\\{.*\\}";
     }
-    
-    private Matcher getMatcher(String pattern, String moviedata ){
+
+    private Matcher getMatcher(String pattern, String moviedata) {
         Pattern p = Pattern.compile(pattern);
         return p.matcher(moviedata);
     }
 
-    private String matchedValue(Matcher m)    {
-        return m.group(0).substring(1, m.group(0).length()-1);
+    private String matchedValue(Matcher m) {
+        return m.group(0).substring(1, m.group(0).length() - 1);
     }
 }
