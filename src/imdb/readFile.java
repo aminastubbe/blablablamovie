@@ -225,31 +225,27 @@ if (filename.equals("actresses.list")) {
                             Boolean credits = false;
                             String moviedata = line.trim();
                             String pattern = "\\(\\d{4}\\)|\\(\\d{4}\\/.*\\)";
-                            Pattern pyear = Pattern.compile(pattern);
-                            Matcher myear = pyear.matcher(moviedata);
+                            Matcher myear = getMatcher(pattern, moviedata);
                             if (myear.find()) {
-                                year = (myear.group(0)).substring(1, 5);
+                                year = matchedValue(myear);
                             }
                             moviedata = moviedata.replaceFirst(pattern, "").trim();
                             pattern = "\\[.*\\]";
-                            Pattern prole = Pattern.compile(pattern);
-                            Matcher mrole = prole.matcher(moviedata);
+                            Matcher mrole = getMatcher(pattern, moviedata);
                             if (mrole.find()) {
 
-                                role = (mrole.group(0)).substring(1, mrole.group(0).length() - 1);
+                                role = matchedValue(mrole);
                             }
                             moviedata = moviedata.replaceFirst(pattern, "").trim();
                             pattern = "\\{.*\\}";
-                            Pattern pepisode = Pattern.compile(pattern);
-                            Matcher mepisode = pepisode.matcher(moviedata);
+                            Matcher mepisode = getMatcher(pattern, moviedata);
                             if (mepisode.find()) {
 
-                                episode = (mepisode.group(0)).substring(1, mepisode.group(0).length() - 1);
+                                episode = matchedValue(mepisode);
                             }
                             moviedata = moviedata.replaceFirst(pattern, "").trim();
                             pattern = "\\(as .*\\)";
-                            Pattern palternatename = Pattern.compile(pattern);
-                            Matcher malternatename = palternatename.matcher(moviedata);
+                            Matcher malternatename=getMatcher(pattern, moviedata);
                             if (malternatename.find()) {
 
                                 alternatename = (malternatename.group(0)).substring(4, malternatename.group(0).length() - 1);
@@ -257,8 +253,7 @@ if (filename.equals("actresses.list")) {
 
                             moviedata = moviedata.replaceFirst(pattern, "").trim();
                             pattern = "\\(uncredited\\)";
-                            Pattern pcredit = Pattern.compile(pattern);
-                            Matcher mcredit = pcredit.matcher(moviedata);
+                            Matcher mcredit = getMatcher(pattern, moviedata);
                             credits = !mcredit.find();
                             moviedata = moviedata.replaceFirst(pattern, "").trim();
                             moviedata = moviedata.replaceAll("\\<.*\\>", "").trim();
@@ -293,28 +288,24 @@ if (filename.equals("actresses.list")) {
                                     String pattern = "\\(\\d{4}\\)|\\(\\d{4}\\/.*\\)";
                                     Matcher myear = getMatcher(pattern, moviedata);
                                     if (myear.find()) {
-                                        year = (myear.group(0)).substring(1, 5);
+                                        year = matchedValue(myear);
                                     }
                                     moviedata = moviedata.replaceFirst(pattern, "").trim();
                                     pattern = "\\[.*\\]";
-                                    Pattern prole = Pattern.compile(pattern);
-                                    Matcher mrole = prole.matcher(moviedata);
+                                    Matcher mrole = getMatcher(pattern, moviedata);
                                     if (mrole.find()) {
 
-                                        role = (mrole.group(0)).substring(1, mrole.group(0).length() - 1);
+                                        role = matchedValue(mrole);
                                     }
                                     moviedata = moviedata.replaceFirst(pattern, "").trim();
                                     pattern = "\\{.*\\}";
-                                    Pattern pepisode = Pattern.compile(pattern);
-                                    Matcher mepisode = pepisode.matcher(moviedata);
+                                    Matcher mepisode = getMatcher(pattern, moviedata);
                                     if (mepisode.find()) {
-
-                                        episode = (mepisode.group(0)).substring(1, mepisode.group(0).length() - 1);
+                                        episode = matchedValue(mepisode);
                                     }
                                     moviedata = moviedata.replaceFirst(pattern, "").trim();
                                     pattern = "\\(as .*\\)";
-                                    Pattern palternatename = Pattern.compile(pattern);
-                                    Matcher malternatename = palternatename.matcher(moviedata);
+                                    Matcher malternatename= getMatcher(pattern,moviedata);
                                     if (malternatename.find()) {
 
                                         alternatename = (malternatename.group(0)).substring(4, malternatename.group(0).length() - 1);
@@ -322,8 +313,7 @@ if (filename.equals("actresses.list")) {
 
                                     moviedata = moviedata.replaceFirst(pattern, "").trim();
                                     pattern = "\\(uncredited\\)";
-                                    Pattern pcredit = Pattern.compile(pattern);
-                                    Matcher mcredit = pcredit.matcher(moviedata);
+                                    Matcher mcredit = getMatcher(pattern, moviedata);
                                     credits = !mcredit.find();
                                     moviedata = moviedata.replaceFirst(pattern, "").trim();
                                     moviedata = moviedata.replaceAll("\\<.*\\>", "").trim();
