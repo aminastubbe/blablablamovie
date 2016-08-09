@@ -13,7 +13,6 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Writer;
 import java.nio.charset.Charset;
 import java.sql.SQLException;
 import java.util.regex.Matcher;
@@ -38,13 +37,14 @@ public class readFile {
     public void readFile(File f, String filename) throws FileNotFoundException, IOException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         FileInputStream fis = new FileInputStream(f);
         BufferedInputStream bis = new BufferedInputStream(fis);
-        BufferedReader dis = new BufferedReader(new InputStreamReader(bis, Charset.forName("UTF-8")));
-
+        BufferedReader dis = new BufferedReader(new InputStreamReader(bis, Charset.forName("ISO-8859-1")));
+        Patterns p = new Patterns();
         String lastLine = null;
         Boolean equal = false;
         Boolean readnext = false;
         String actor = null;
         FileWriter fw = null;
+        
         int counter = 0;
         if (filename.equals("actors.list")) {
             fw = new FileWriter("actors.csv");
@@ -55,25 +55,48 @@ public class readFile {
         if (filename.equals("actresses.list")) {
             fw = new FileWriter("actresses.csv");
         }
-        if (filename.equals("running-times.list")){
+        if (filename.equals("running-times.list")) {
             fw = new FileWriter("running-times.csv");
         }
-       
-        while (dis.ready()) {
-            if (filename.equals("running-times.list")){
-                /*start*/
-                /*
-               
-                RUNNING TIMES LIST
-                ==================
-                "#1 Single" (2006)					30
-                "#1 Single" (2006) {Cats and Dogs (#1.4)}		20
-                "#1 Single" (2006) {Finishing a Chapter (#1.5)}		20
 
-                */
+        while (dis.ready()) {
+            if (filename.equals("running-times.list")) {
+                String originalLine = "RUNNING TIMES LIST";
+                String line = dis.readLine();
+                String moviedata = null;
+                String overige = null;
+                String minutes = null;
+                if (!equal) {
+                    if (line.equals(originalLine)) {
+                        equal = true;
+                        lastLine = line;
+                    }
+                } else if (!readnext) {
+                    String regex = "([=]{" + lastLine.length() + "})";
+                    readnext = line.matches(regex);
+                } else if (!line.isEmpty()) {
+                    String[] ss = line.split("\t");
+                    Boolean first = true;
+                    for (int i = 0; i <= ss.length - 1; i++) {
+                        if (i == 0) {
+                            moviedata = ss[i];
+                        } else if (!ss[i].isEmpty()) {
+                            if (!first) {
+
+                                overige = ss[i];
+                            }
+                            if (first) {
+                                minutes = ss[i];
+                                first = false;
+                            }
+                        }
+                    }
+                    executeRunningTimeList(fw, moviedata, minutes, overige);
+                }
 
             }
-            if(filename.equals("release-dates.list")){}
+            if (filename.equals("release-dates.list")) {
+            }
             if (filename.equals("actresses.list")) {
 
                 String originalLine = "THE ACTRESSES LIST";
@@ -95,59 +118,29 @@ public class readFile {
                             String role = null;
                             String alternatename = null;
                             Boolean credits = false;
-                            String moviedata = line.trim();
-                            String pattern = "\\(\\d{4}\\)|\\(\\d{4}\\/.*\\)";
-                            Pattern pyear = Pattern.compile(pattern);
-                            Matcher myear = pyear.matcher(moviedata);
-                            if (myear.find()) {
-                                year = (myear.group(0)).substring(1, 5);
-                            }
-                            moviedata = moviedata.replaceFirst(pattern, "").trim();
-                            pattern = "\\[.*\\]";
-                            Pattern prole = Pattern.compile(pattern);
-                            Matcher mrole = prole.matcher(moviedata);
-                            if (mrole.find()) {
+                            String moviedata = line;
 
-                                role = (mrole.group(0)).substring(1, mrole.group(0).length() - 1);
-                            }
-                            moviedata = moviedata.replaceFirst(pattern, "").trim();
-                            pattern = "\\{.*\\}";
-                            Pattern pepisode = Pattern.compile(pattern);
-                            Matcher mepisode = pepisode.matcher(moviedata);
-                            if (mepisode.find()) {
+                            year = getMatchedData(getMatcher(p.YearPattern(),moviedata));
+                            moviedata = moviedata.replaceFirst(p.YearPattern(), "");
+                            role = getMatchedData(getMatcher(p.RolePattern(),moviedata));
+                            moviedata = moviedata.replaceFirst(p.RolePattern(), "");
 
-                                episode = (mepisode.group(0)).substring(1, mepisode.group(0).length() - 1);
-                            }
-                            moviedata = moviedata.replaceFirst(pattern, "").trim();
-                            pattern = "\\(as .*\\)";
-                            Pattern palternatename = Pattern.compile(pattern);
+                            episode = getMatchedData(getMatcher(p.EpisodePattern(),moviedata));
+                            moviedata = moviedata.replaceFirst(p.EpisodePattern(), "");
+                            Pattern palternatename = Pattern.compile(p.AlternateNamePattern());
                             Matcher malternatename = palternatename.matcher(moviedata);
                             if (malternatename.find()) {
 
                                 alternatename = (malternatename.group(0)).substring(4, malternatename.group(0).length() - 1);
                             }
 
-                            moviedata = moviedata.replaceFirst(pattern, "").trim();
-                            pattern = "\\(uncredited\\)";
-                            Pattern pcredit = Pattern.compile(pattern);
-                            Matcher mcredit = pcredit.matcher(moviedata);
-                            credits = !mcredit.find();
-                            moviedata = moviedata.replaceFirst(pattern, "").trim();
+                            moviedata = moviedata.replaceFirst(p.AlternateNamePattern(), "");
+                            credits = !getMatcher(p.CreditsPattern(), moviedata).find();
+                            
+
+                            moviedata = moviedata.replaceFirst(p.CreditsPattern(), "");
                             moviedata = moviedata.replaceAll("\\<.*\\>", "").trim();
-                            fw.append(actor);
-                            fw.append(';');
-                            fw.append(alternatename);
-                            fw.append(';');
-                            fw.append(moviedata);
-                            fw.append(";");
-                            fw.append(year);
-                            fw.append(";");
-                            fw.append(role);
-                            fw.append(";");
-                            fw.append(credits.toString());
-                            fw.append(";");
-                            fw.append(episode);
-                            fw.append('\n');
+                            executeActorList(fw, actor, alternatename, moviedata, year, role, credits, episode);
 
                         } else {
                             String[] a = line.split("\t");
@@ -162,58 +155,27 @@ public class readFile {
                                     String alternatename = null;
                                     Boolean credits = false;
                                     String moviedata = line.trim();
-                                    String pattern = "\\(\\d{4}\\)|\\(\\d{4}\\/.*\\)";
-                                    Pattern pyear = Pattern.compile(pattern);
-                                    Matcher myear = pyear.matcher(moviedata);
-                                    if (myear.find()) {
-                                        year = (myear.group(0)).substring(1, 5);
-                                    }
-                                    moviedata = moviedata.replaceFirst(pattern, "").trim();
-                                    pattern = "\\[.*\\]";
-                                    Pattern prole = Pattern.compile(pattern);
-                                    Matcher mrole = prole.matcher(moviedata);
-                                    if (mrole.find()) {
 
-                                        role = (mrole.group(0)).substring(1, mrole.group(0).length() - 1);
-                                    }
-                                    moviedata = moviedata.replaceFirst(pattern, "").trim();
-                                    pattern = "\\{.*\\}";
-                                    Pattern pepisode = Pattern.compile(pattern);
-                                    Matcher mepisode = pepisode.matcher(moviedata);
-                                    if (mepisode.find()) {
+                                    year = getMatchedData(getMatcher(p.YearPattern(), moviedata));
+                                    moviedata = moviedata.replaceFirst(p.YearPattern(), "");
+                                    role = getMatchedData(getMatcher(p.RolePattern(), moviedata));
+                                    moviedata = moviedata.replaceFirst(p.RolePattern(), "");
 
-                                        episode = (mepisode.group(0)).substring(1, mepisode.group(0).length() - 1);
-                                    }
-                                    moviedata = moviedata.replaceFirst(pattern, "").trim();
-                                    pattern = "\\(as .*\\)";
-                                    Pattern palternatename = Pattern.compile(pattern);
-                                    Matcher malternatename = palternatename.matcher(moviedata);
+                                    episode = getMatchedData(getMatcher(p.EpisodePattern(),moviedata));
+                                    moviedata = moviedata.replaceFirst(p.EpisodePattern(), "");
+
+                                    Matcher malternatename = getMatcher(p.AlternateNamePattern(),moviedata);
                                     if (malternatename.find()) {
 
                                         alternatename = (malternatename.group(0)).substring(4, malternatename.group(0).length() - 1);
                                     }
 
-                                    moviedata = moviedata.replaceFirst(pattern, "").trim();
-                                    pattern = "\\(uncredited\\)";
-                                    Pattern pcredit = Pattern.compile(pattern);
-                                    Matcher mcredit = pcredit.matcher(moviedata);
-                                    credits = !mcredit.find();
-                                    moviedata = moviedata.replaceFirst(pattern, "").trim();
+                                    moviedata = moviedata.replaceFirst(p.AlternateNamePattern(), "").trim();
+
+                                    credits = !getMatcher(p.CreditsPattern(), moviedata).find();
+                                    moviedata = moviedata.replaceFirst(p.CreditsPattern(), "");
                                     moviedata = moviedata.replaceAll("\\<.*\\>", "").trim();
-                                    fw.append(actor);
-                                    fw.append(';');
-                                    fw.append(alternatename);
-                                    fw.append(';');
-                                    fw.append(moviedata);
-                                    fw.append(";");
-                                    fw.append(year);
-                                    fw.append(";");
-                                    fw.append(role);
-                                    fw.append(";");
-                                    fw.append(credits.toString());
-                                    fw.append(";");
-                                    fw.append(episode);
-                                    fw.append('\n');
+                                    executeActorList(fw, actor, alternatename, moviedata, year, role, credits, episode);
                                 }
                             }
                         }
@@ -241,54 +203,23 @@ public class readFile {
                             String role = null;
                             String alternatename = null;
                             Boolean credits = false;
-                            String moviedata = line.trim();
-                            String pattern = "\\(\\d{4}\\)|\\(\\d{4}\\/.*\\)";
-                            Matcher myear = getMatcher(pattern, moviedata);
-                            if (myear.find()) {
-                                year = matchedValue(myear);
-                            }
-                            moviedata = moviedata.replaceFirst(pattern, "").trim();
-                            pattern = "\\[.*\\]";
-                            Matcher mrole = getMatcher(pattern, moviedata);
-                            if (mrole.find()) {
-
-                                role = matchedValue(mrole);
-                            }
-                            moviedata = moviedata.replaceFirst(pattern, "").trim();
-                            pattern = "\\{.*\\}";
-                            Matcher mepisode = getMatcher(pattern, moviedata);
-                            if (mepisode.find()) {
-
-                                episode = matchedValue(mepisode);
-                            }
-                            moviedata = moviedata.replaceFirst(pattern, "").trim();
-                            pattern = "\\(as .*\\)";
-                            Matcher malternatename = getMatcher(pattern, moviedata);
+                            String moviedata = line;
+                            year = getMatchedData(getMatcher(p.YearPattern(), moviedata));
+                            moviedata = moviedata.replaceFirst(p.YearPattern(), "");
+                            role = getMatchedData(getMatcher(p.RolePattern(), moviedata));
+                            moviedata = moviedata.replaceFirst(p.RolePattern(), "");
+                            episode = getMatchedData(getMatcher(p.EpisodePattern(), moviedata));
+                            moviedata = moviedata.replaceFirst(p.EpisodePattern(), "");
+                            Matcher malternatename = getMatcher(p.AlternateNamePattern(), moviedata);
                             if (malternatename.find()) {
 
                                 alternatename = (malternatename.group(0)).substring(4, malternatename.group(0).length() - 1);
                             }
-
-                            moviedata = moviedata.replaceFirst(pattern, "").trim();
-                            pattern = "\\(uncredited\\)";
-                            Matcher mcredit = getMatcher(pattern, moviedata);
-                            credits = !mcredit.find();
-                            moviedata = moviedata.replaceFirst(pattern, "").trim();
+                            moviedata = moviedata.replaceFirst(p.AlternateNamePattern(), "");
+                            credits = !getMatcher(p.CreditsPattern(), moviedata).find();
+                            moviedata = moviedata.replaceFirst(p.CreditsPattern(), "");
                             moviedata = moviedata.replaceAll("\\<.*\\>", "").trim();
-                            fw.append(actor);
-                            fw.append(';');
-                            fw.append(alternatename);
-                            fw.append(';');
-                            fw.append(moviedata);
-                            fw.append(";");
-                            fw.append(year);
-                            fw.append(";");
-                            fw.append(role);
-                            fw.append(";");
-                            fw.append(credits.toString());
-                            fw.append(";");
-                            fw.append(episode);
-                            fw.append('\n');
+                            executeActorList(fw, actor, alternatename, moviedata, year, role, credits, episode);
 
                         } else {
                             String[] a = line.split("\t");
@@ -302,53 +233,23 @@ public class readFile {
                                     String role = null;
                                     String alternatename = null;
                                     Boolean credits = false;
-                                    String moviedata = line.trim();
-                                    String pattern = "\\(\\d{4}\\)|\\(\\d{4}\\/.*\\)";
-                                    Matcher myear = getMatcher(pattern, moviedata);
-                                    if (myear.find()) {
-                                        year = matchedValue(myear);
-                                    }
-                                    moviedata = moviedata.replaceFirst(pattern, "").trim();
-                                    pattern = "\\[.*\\]";
-                                    Matcher mrole = getMatcher(pattern, moviedata);
-                                    if (mrole.find()) {
-
-                                        role = matchedValue(mrole);
-                                    }
-                                    moviedata = moviedata.replaceFirst(pattern, "").trim();
-                                    pattern = "\\{.*\\}";
-                                    Matcher mepisode = getMatcher(pattern, moviedata);
-                                    if (mepisode.find()) {
-                                        episode = matchedValue(mepisode);
-                                    }
-                                    moviedata = moviedata.replaceFirst(pattern, "").trim();
-                                    pattern = "\\(as .*\\)";
-                                    Matcher malternatename = getMatcher(pattern, moviedata);
+                                    String moviedata = line;
+                                    year = getMatchedData(getMatcher(p.YearPattern(), moviedata));
+                                    moviedata = moviedata.replaceFirst(p.YearPattern(), "");
+                                    role = getMatchedData(getMatcher(p.RolePattern(), moviedata));
+                                    moviedata = moviedata.replaceFirst(p.RolePattern(), "");
+                                    episode = getMatchedData(getMatcher(p.EpisodePattern(), moviedata));
+                                    moviedata = moviedata.replaceFirst(p.EpisodePattern(), "");
+                                    Matcher malternatename = getMatcher(p.AlternateNamePattern(), moviedata);
                                     if (malternatename.find()) {
 
                                         alternatename = (malternatename.group(0)).substring(4, malternatename.group(0).length() - 1);
                                     }
-
-                                    moviedata = moviedata.replaceFirst(pattern, "").trim();
-                                    pattern = "\\(uncredited\\)";
-                                    Matcher mcredit = getMatcher(pattern, moviedata);
-                                    credits = !mcredit.find();
-                                    moviedata = moviedata.replaceFirst(pattern, "").trim();
+                                    moviedata = moviedata.replaceFirst(p.AlternateNamePattern(), "");
+                                    credits = !getMatcher(p.CreditsPattern(), moviedata).find();
+                                    moviedata = moviedata.replaceFirst(p.CreditsPattern(), "");
                                     moviedata = moviedata.replaceAll("\\<.*\\>", "").trim();
-                                    fw.append(actor);
-                                    fw.append(';');
-                                    fw.append(alternatename);
-                                    fw.append(';');
-                                    fw.append(moviedata);
-                                    fw.append(";");
-                                    fw.append(year);
-                                    fw.append(";");
-                                    fw.append(role);
-                                    fw.append(";");
-                                    fw.append(credits.toString());
-                                    fw.append(";");
-                                    fw.append(episode);
-                                    fw.append('\n');
+                                    executeActorList(fw, actor, alternatename, moviedata, year, role, credits, episode);
                                 }
                             }
                         }
@@ -377,33 +278,31 @@ public class readFile {
                         if (!ss[i].isEmpty()) {
                             if (i == 0) {
                                 moviedata = ss[i];
-                                Matcher myear = getMatcher(getYearPattern(), moviedata);
-                                if (myear.find()) {
-                                    year = matchedValue(myear);
-                                }
-                                moviedata = moviedata.replaceFirst(getYearPattern(), "").trim();
-                                Matcher mepisode = getMatcher(getEpisodePattern(), moviedata);
-                                if (mepisode.find()) {
-                                    episode = matchedValue(mepisode);
-                                }
-                                moviedata = moviedata.replaceFirst(getEpisodePattern(), "").trim();
+                                year = getMatchedData(getMatcher(p.YearPattern(), moviedata));
+                                moviedata = moviedata.replaceFirst(p.YearPattern(), "");
+                                episode = getMatchedData(getMatcher(p.EpisodePattern(), moviedata));
+                                moviedata = moviedata.replaceFirst(p.EpisodePattern(), "").trim();
                             } else {
                                 yearSeason = ss[i];
                             }
                         }
                     }
-                    fw.append(moviedata);
-                    fw.append(";");
-                    fw.append(yearSeason);
-                    fw.append(";");
-                    fw.append(year);
-                    fw.append(";");
-                    fw.append(episode);
-                    fw.append("\n");
+                    executeMovieList(fw, moviedata, yearSeason, year, episode);
+                    
                 }
             }
         }
+
         closeConnections(fw, fis, bis, dis);
+    }
+
+    private String getMatchedData(Matcher m) {
+        if (m.find()) {
+            return matchedValue(m);
+        } else {
+            return null;
+        }
+
     }
 
     private void closeConnections(FileWriter fw, FileInputStream fis, BufferedInputStream bis, BufferedReader dis) throws IOException {
@@ -414,14 +313,6 @@ public class readFile {
         dis.close();
     }
 
-    private String getYearPattern() {
-        return "\\(\\d{4}\\)|\\(\\d{4}\\/.*\\)";
-    }
-
-    private String getEpisodePattern() {
-        return "\\{.*\\}";
-    }
-
     private Matcher getMatcher(String pattern, String moviedata) {
         Pattern p = Pattern.compile(pattern);
         return p.matcher(moviedata);
@@ -429,5 +320,42 @@ public class readFile {
 
     private String matchedValue(Matcher m) {
         return m.group(0).substring(1, m.group(0).length() - 1);
+    }
+
+    private void executeMovieList(FileWriter fw, String moviedata, String yearSeason, String year, String episode) throws IOException {
+        fw.append(moviedata);
+        fw.append(";");
+        fw.append(yearSeason);
+        fw.append(";");
+        fw.append(year);
+        fw.append(";");
+        fw.append(episode);
+        fw.append("\n");
+    }
+
+    private void executeActorList(FileWriter fw, String actor, String alternatename, String moviedata, String year, String role, boolean credits, String episode) throws IOException {
+        fw.append(actor);
+        fw.append(';');
+        fw.append(alternatename);
+        fw.append(';');
+        fw.append(moviedata);
+        fw.append(";");
+        fw.append(year);
+        fw.append(";");
+        fw.append(role);
+        fw.append(";");
+        fw.append(String.valueOf(credits));
+        fw.append(";");
+        fw.append(episode);
+        fw.append('\n');
+    }
+
+    private void executeRunningTimeList(FileWriter fw, String moviedata, String minutes, String overige) throws IOException{
+                        fw.append(moviedata);
+                    fw.append(";");
+                    fw.append(minutes);
+                    fw.append(";");
+                    fw.append(overige);
+                    fw.append('\n');
     }
 }
